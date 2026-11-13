@@ -72,7 +72,7 @@ export const SosQueueDrawer: React.FC<SosQueueDrawerProps> = ({
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `RAKSHAK_SOS_MANIFEST_${Date.now()}.json`;
+    a.download = `SANKET_SOS_MANIFEST_${Date.now()}.json`;
     a.click();
     URL.revokeObjectURL(url);
   };
@@ -83,7 +83,7 @@ export const SosQueueDrawer: React.FC<SosQueueDrawerProps> = ({
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `RAKSHAK_SOS_QUEUE_${Date.now()}.csv`;
+    a.download = `SANKET_SOS_QUEUE_${Date.now()}.csv`;
     a.click();
     URL.revokeObjectURL(url);
   };

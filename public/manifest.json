@@ -1,12 +1,12 @@
 {
-  "name": "RAKSHAK - India Disaster Response Dashboard",
-  "short_name": "RAKSHAK",
+  "name": "SANकेत - Live Disaster Alerts",
+  "short_name": "SANकेत",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#0a0f1d",
   "theme_color": "#dc2626",
   "orientation": "any",
-  "description": "Offline-First Emergency Response & Hazard Mapping System for India",
+  "description": "SANकेत: Live Disaster Alerts & NDMA Early Warning System across India",
   "icons": [
     {
       "src": "/shield-alert.svg",

@@ -127,8 +127,86 @@ export const SAMPLE_MUMBAI_SURGE_XML = `<?xml version="1.0" encoding="UTF-8"?>
   </info>
 </alert>`;
 
+export const SAMPLE_FOREST_FIRE_FSI_XML = `<?xml version="1.0" encoding="UTF-8"?>
+<alert xmlns="urn:oasis:names:tc:emergency:cap:1.2">
+  <identifier>NDMA-IN-2026-FIRE-018</identifier>
+  <sender>fsi.nic.in</sender>
+  <sent>2026-11-13T10:30:00+05:30</sent>
+  <status>Actual</status>
+  <msgType>Alert</msgType>
+  <scope>Public</scope>
+  <info>
+    <category>Fire</category>
+    <event>Severe Forest Fire Warning (FAST 4.0)</event>
+    <urgency>Immediate</urgency>
+    <severity>Extreme</severity>
+    <certainty>Observed</certainty>
+    <headline>RED ALERT: Large Active Forest Fire Cluster Detected in Similipal Tiger Reserve &amp; Mayurbhanj Hills</headline>
+    <description>Forest Survey of India (FSI) SNPP-VIIRS and MODIS near real-time satellite fire alert system FAST 4.0 detected 28 high-confidence active fire spots with high thermal radiative power. Fast-spreading canopy forest fire driven by gusty dry winds through dry deciduous Sal forest. Severe smoke plumes affecting visibility and wildlife habitats.</description>
+    <instruction>Evacuate forest edge fringe villages immediately. State Forest Department fire squads deploying blowers and counter-fire lines. Maintain firebreaks and prevent any open burning or agricultural stubble fires.</instruction>
+    <senderName>Forest Survey of India (FSI) &amp; Ministry of Environment, Forest and Climate Change</senderName>
+    <area>
+      <areaDesc>Similipal Tiger Reserve Core, Baripada, Karanjia, and Rairangpur Forest Divisions (Mayurbhanj, Odisha)</areaDesc>
+      <circle>21.85,86.35 45.0</circle>
+    </area>
+  </info>
+</alert>`;
+
+export const SAMPLE_DGRE_LANDSLIDE_XML = `<?xml version="1.0" encoding="UTF-8"?>
+<alert xmlns="urn:oasis:names:tc:emergency:cap:1.2">
+  <identifier>NDMA-IN-2026-DGRE-055</identifier>
+  <sender>dgre.drdo.in</sender>
+  <sent>2026-11-13T11:00:00+05:30</sent>
+  <status>Actual</status>
+  <msgType>Alert</msgType>
+  <scope>Public</scope>
+  <info>
+    <category>Geo</category>
+    <event>Critical Landslide &amp; Slope Collapse Warning</event>
+    <urgency>Immediate</urgency>
+    <severity>Extreme</severity>
+    <certainty>Observed</certainty>
+    <headline>RED ALERT: Massive Slope Failure &amp; Active Landslide Corridor Along Jammu-Srinagar National Highway (NH-44)</headline>
+    <description>Defence Geoinformatics Research Establishment (DGRE / DRDO) radar slope monitoring network records critical displacement velocities along vulnerable mountain corridors. Massive rockfalls and shooting stones triggering active mudslides and debris flows near Panthyal, Mehar, and Cafeteria Morh. Highway impassable.</description>
+    <instruction>Complete suspension of vehicular traffic on NH-44. Residents along unstable hill cuts must evacuate to designated relief shelters. Strictly avoid walking under shooting stone zones and rockfall gullies.</instruction>
+    <senderName>Defence Geoinformatics Research Establishment (DGRE/DRDO)</senderName>
+    <area>
+      <areaDesc>Ramban, Banihal, and Udhampur Sector (Jammu &amp; Kashmir)</areaDesc>
+      <polygon>33.15,75.10 33.30,75.25 33.40,75.30 33.35,75.40 33.20,75.30 33.10,75.15 33.15,75.10</polygon>
+    </area>
+  </info>
+</alert>`;
+
+export const SAMPLE_EARTHQUAKE_CAP_XML = `<?xml version="1.0" encoding="UTF-8"?>
+<alert xmlns="urn:oasis:names:tc:emergency:cap:1.2">
+  <identifier>NDMA-IN-2026-EQ-091</identifier>
+  <sender>seismo.gov.in</sender>
+  <sent>2026-11-13T09:45:00+05:30</sent>
+  <status>Actual</status>
+  <msgType>Alert</msgType>
+  <scope>Public</scope>
+  <info>
+    <category>Geo</category>
+    <event>Major Earthquake / Seismic Tremor</event>
+    <urgency>Immediate</urgency>
+    <severity>Extreme</severity>
+    <certainty>Observed</certainty>
+    <headline>RED ALERT: M6.4 Earthquake Epicenter Recorded in Chamoli Sector; Severe Tremors Across Uttarakhand &amp; NCR</headline>
+    <description>National Centre for Seismology (NCS) reports an earthquake of Magnitude 6.4 occurring at 09:42 IST at focal depth of 10 km. Strong tremors felt across Uttarakhand, Himachal Pradesh, Punjab, Haryana, and Delhi-NCR. High risk of secondary landslides and aftershocks in mountainous fault lines.</description>
+    <instruction>Drop, Cover, and Hold On. Stay away from unreinforced masonry walls, tall glass structures, and overhead electric lines. Do not use elevators. Evacuate calmly to open parks and grounds once shaking stops. Expect aftershocks.</instruction>
+    <senderName>National Centre for Seismology (NCS) &amp; NDMA Seismology Division</senderName>
+    <area>
+      <areaDesc>Chamoli, Rudraprayag, Uttarkashi, and Pithoragarh Districts (Uttarakhand)</areaDesc>
+      <circle>30.40,79.35 55.0</circle>
+    </area>
+  </info>
+</alert>`;
+
 export const ALL_SAMPLE_CAP_FEEDS = [
+  SAMPLE_FOREST_FIRE_FSI_XML,
   SAMPLE_CYCLONE_CAP_XML,
+  SAMPLE_DGRE_LANDSLIDE_XML,
+  SAMPLE_EARTHQUAKE_CAP_XML,
   SAMPLE_FLOOD_CAP_XML,
   SAMPLE_LANDSLIDE_CAP_XML,
   SAMPLE_HEATWAVE_CAP_XML,

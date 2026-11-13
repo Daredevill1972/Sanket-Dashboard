@@ -44,3 +44,17 @@ export interface SosQueueStats {
   critical: number;
 }
 
+export type MeshPacketType = 'location_ping' | 'sos_relay' | 'situation_report' | 'telemetry_ping';
+
+export interface MeshPacket {
+  id: string;
+  type: MeshPacketType;
+  timestamp: string;
+  payload: any;
+  syncStatus: 'pending_mesh' | 'transmitting' | 'synced_hq' | 'failed';
+  hopCount?: number;
+  originNodeId?: string;
+  targetService?: string;
+}
+
+

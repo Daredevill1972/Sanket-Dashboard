@@ -4,7 +4,10 @@ import { parseCapXml } from '../services/capParser';
 import { offlineDB } from '../services/indexedDB';
 import {
   ALL_SAMPLE_CAP_FEEDS,
+  SAMPLE_FOREST_FIRE_FSI_XML,
   SAMPLE_CYCLONE_CAP_XML,
+  SAMPLE_DGRE_LANDSLIDE_XML,
+  SAMPLE_EARTHQUAKE_CAP_XML,
   SAMPLE_FLOOD_CAP_XML,
   SAMPLE_LANDSLIDE_CAP_XML,
   SAMPLE_HEATWAVE_CAP_XML,
@@ -170,10 +173,28 @@ export const CapIngestionModal: React.FC<CapIngestionModalProps> = ({
 
             <div className="flex flex-wrap gap-1.5">
               <button
+                onClick={() => handleLoadSample(SAMPLE_FOREST_FIRE_FSI_XML)}
+                className="px-2.5 py-1.5 rounded bg-orange-950/60 border border-orange-500/50 text-orange-200 hover:bg-orange-900/80 transition flex items-center gap-1 font-semibold"
+              >
+                🔥 FSI Forest Fire (Similipal)
+              </button>
+              <button
                 onClick={() => handleLoadSample(SAMPLE_CYCLONE_CAP_XML)}
-                className="px-2.5 py-1.5 rounded bg-red-950/40 border border-red-500/40 text-red-200 hover:bg-red-900/60 transition"
+                className="px-2.5 py-1.5 rounded bg-sky-950/50 border border-sky-500/50 text-sky-200 hover:bg-sky-900/70 transition flex items-center gap-1 font-semibold"
               >
                 🌪️ Cyclone 'Varuna' (Odisha/AP)
+              </button>
+              <button
+                onClick={() => handleLoadSample(SAMPLE_DGRE_LANDSLIDE_XML)}
+                className="px-2.5 py-1.5 rounded bg-amber-950/60 border border-amber-500/50 text-amber-200 hover:bg-amber-900/80 transition flex items-center gap-1 font-semibold"
+              >
+                ⛰️ DGRE Landslide (NH-44 J&amp;K)
+              </button>
+              <button
+                onClick={() => handleLoadSample(SAMPLE_EARTHQUAKE_CAP_XML)}
+                className="px-2.5 py-1.5 rounded bg-red-950/60 border border-red-500/50 text-red-200 hover:bg-red-900/80 transition flex items-center gap-1 font-semibold"
+              >
+                ⚡ M6.4 Earthquake (Chamoli Fault)
               </button>
               <button
                 onClick={() => handleLoadSample(SAMPLE_FLOOD_CAP_XML)}

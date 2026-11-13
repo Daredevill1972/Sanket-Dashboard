@@ -1,10 +1,12 @@
-import { SosBroadcast, SosSyncStatus } from '../types/sos';
+import { SosBroadcast, SosSyncStatus, MeshPacket } from '../types/sos';
 import { CapAlert } from '../types/cap';
 
-const DB_NAME = 'RakshakDisasterDB';
-const DB_VERSION = 1;
+const DB_NAME = 'SanketDisasterDB';
+const DB_VERSION = 2;
 const STORE_SOS = 'sos_queue';
 const STORE_CAP = 'cached_cap_alerts';
+const STORE_PAYLOAD = 'latest_ndma_payload';
+const STORE_MESH = 'offline_mesh_queue';
 
 class OfflineIndexedDB {
   private db: IDBDatabase | null = null;
@@ -28,10 +30,23 @@ class OfflineIndexedDB {
           sosStore.createIndex('priority', 'priority', { unique: false });
         }
 
-        // Store for cached NDMA CAP feeds
+        // Store for individual cached NDMA CAP feeds
         if (!db.objectStoreNames.contains(STORE_CAP)) {
           const capStore = db.createObjectStore(STORE_CAP, { keyPath: 'identifier' });
           capStore.createIndex('sent', 'sent', { unique: false });
+        }
+
+        // Store for the raw latest NDMA JSON payload
+        if (!db.objectStoreNames.contains(STORE_PAYLOAD)) {
+          db.createObjectStore(STORE_PAYLOAD, { keyPath: 'id' });
+        }
+
+        // Store for offline mesh synchronization queue (outgoing data / location pings)
+        if (!db.objectStoreNames.contains(STORE_MESH)) {
+          const meshStore = db.createObjectStore(STORE_MESH, { keyPath: 'id' });
+          meshStore.createIndex('syncStatus', 'syncStatus', { unique: false });
+          meshStore.createIndex('type', 'type', { unique: false });
+          meshStore.createIndex('timestamp', 'timestamp', { unique: false });
         }
       };
 
@@ -161,6 +176,121 @@ class OfflineIndexedDB {
       const store = tx.objectStore(STORE_CAP);
       const req = store.getAll();
       req.onsuccess = () => resolve(req.result as CapAlert[]);
+      req.onerror = () => reject(req.error);
+    });
+  }
+
+  // Store the entire raw latest NDMA JSON payload for full offline resilience
+  async saveLatestNdmaPayload(payload: any): Promise<void> {
+    const db = await this.getDB();
+    return new Promise((resolve, reject) => {
+      const tx = db.transaction(STORE_PAYLOAD, 'readwrite');
+      const store = tx.objectStore(STORE_PAYLOAD);
+      const record = {
+        id: 'latest',
+        savedAt: new Date().toISOString(),
+        payload
+      };
+      const req = store.put(record);
+      req.onsuccess = () => resolve();
+      req.onerror = () => reject(req.error);
+    });
+  }
+
+  // Retrieve the entire latest NDMA JSON payload from IndexedDB
+  async getLatestNdmaPayload(): Promise<any | null> {
+    const db = await this.getDB();
+    return new Promise((resolve, reject) => {
+      const tx = db.transaction(STORE_PAYLOAD, 'readonly');
+      const store = tx.objectStore(STORE_PAYLOAD);
+      const req = store.get('latest');
+      req.onsuccess = () => {
+        if (req.result && req.result.payload) {
+          resolve(req.result.payload);
+        } else {
+          resolve(null);
+        }
+      };
+      req.onerror = () => reject(req.error);
+    });
+  }
+
+  // --- OFFLINE MESH SYNCHRONIZATION QUEUE ---
+
+  // Queue any outgoing data or location pings when offline
+  async queueMeshPacket(packet: MeshPacket): Promise<string> {
+    const db = await this.getDB();
+    return new Promise((resolve, reject) => {
+      const tx = db.transaction(STORE_MESH, 'readwrite');
+      const store = tx.objectStore(STORE_MESH);
+      const req = store.put(packet);
+      req.onsuccess = () => resolve(packet.id);
+      req.onerror = () => reject(req.error);
+    });
+  }
+
+  async getPendingMeshPackets(): Promise<MeshPacket[]> {
+    const db = await this.getDB();
+    return new Promise((resolve, reject) => {
+      const tx = db.transaction(STORE_MESH, 'readonly');
+      const store = tx.objectStore(STORE_MESH);
+      const index = store.index('syncStatus');
+      const req = index.getAll('pending_mesh');
+      req.onsuccess = () => resolve(req.result as MeshPacket[]);
+      req.onerror = () => reject(req.error);
+    });
+  }
+
+  async getAllMeshPackets(): Promise<MeshPacket[]> {
+    const db = await this.getDB();
+    return new Promise((resolve, reject) => {
+      const tx = db.transaction(STORE_MESH, 'readonly');
+      const store = tx.objectStore(STORE_MESH);
+      const req = store.getAll();
+      req.onsuccess = () => {
+        const list = req.result as MeshPacket[];
+        list.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+        resolve(list);
+      };
+      req.onerror = () => reject(req.error);
+    });
+  }
+
+  async updateMeshPacketStatus(
+    id: string,
+    status: MeshPacket['syncStatus']
+  ): Promise<void> {
+    const db = await this.getDB();
+    return new Promise((resolve, reject) => {
+      const tx = db.transaction(STORE_MESH, 'readwrite');
+      const store = tx.objectStore(STORE_MESH);
+      const req = store.get(id);
+      req.onsuccess = () => {
+        const item = req.result as MeshPacket | undefined;
+        if (!item) return resolve();
+        item.syncStatus = status;
+        store.put(item).onsuccess = () => resolve();
+      };
+      req.onerror = () => reject(req.error);
+    });
+  }
+
+  async clearSyncedMeshPackets(): Promise<void> {
+    const db = await this.getDB();
+    return new Promise((resolve, reject) => {
+      const tx = db.transaction(STORE_MESH, 'readwrite');
+      const store = tx.objectStore(STORE_MESH);
+      const index = store.index('syncStatus');
+      const req = index.openCursor(IDBKeyRange.only('synced_hq'));
+      req.onsuccess = (event) => {
+        const cursor = (event.target as IDBRequest).result as IDBCursorWithValue | null;
+        if (cursor) {
+          cursor.delete();
+          cursor.continue();
+        } else {
+          resolve();
+        }
+      };
       req.onerror = () => reject(req.error);
     });
   }

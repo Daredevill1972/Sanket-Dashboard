@@ -31,9 +31,21 @@ export function parseCapPolygon(coordString: string): [number, number][] {
   for (const pair of pairs) {
     const parts = pair.split(',').map((p) => parseFloat(p.trim()));
     if (parts.length >= 2 && !isNaN(parts[0]) && !isNaN(parts[1])) {
-      const lat = parts[0];
-      const lon = parts[1];
-      // GeoJSON requires [longitude, latitude]
+      const val1 = parts[0];
+      const val2 = parts[1];
+      // CRITICAL: Split CAP coordinate (lat,lon) and reverse to [lon, lat] for MapLibre
+      let lon: number;
+      let lat: number;
+      if (val1 < 45 && val2 >= 65) {
+        lat = val1;
+        lon = val2;
+      } else if (val1 >= 65 && val2 < 45) {
+        lon = val1;
+        lat = val2;
+      } else {
+        lat = val1;
+        lon = val2;
+      }
       ring.push([lon, lat]);
     }
   }
@@ -54,13 +66,13 @@ export function parseCapPolygon(coordString: string): [number, number][] {
 export function getSeverityColor(severity: AlertSeverity): string {
   switch (severity) {
     case 'Extreme':
-      return '#dc2626'; // Red Alert
+      return '#dc2626'; // Crimson Red
     case 'Severe':
-      return '#ea580c'; // Orange Alert
+      return '#f59e0b'; // Amber Orange
     case 'Moderate':
       return '#eab308'; // Yellow Alert
     case 'Minor':
-      return '#2563eb'; // Blue Alert
+      return '#0ea5e9'; // Sky Blue Alert
     default:
       return '#10b981'; // Green / Advisory
   }

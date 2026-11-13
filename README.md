@@ -1,4 +1,4 @@
-# RAKSHAK (रक्षक) — Offline-First Disaster Response Dashboard for India
+# SANकेत — Live Disaster Alerts & NDMA Early Warning System for India
 
 An offline-first, high-resilience national disaster response and emergency management platform tailored for India. Built with **MapLibre GL**, **NDMA Common Alerting Protocol (CAP) Feed Ingestion**, and an **IndexedDB-backed Offline SOS Broadcast Queue**.
 
@@ -85,3 +85,4 @@ npm run preview
 - **Audio Synthesis**: Web Audio API
 - **Icons**: Lucide React
 - **PWA**: Service Worker caching (`/sw.js`) and Web App Manifest (`/manifest.json`)
+

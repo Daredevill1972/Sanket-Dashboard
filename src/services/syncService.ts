@@ -1,4 +1,4 @@
-import { SosBroadcast } from '../types/sos';
+import { SosBroadcast, MeshPacket, MeshPacketType } from '../types/sos';
 import { offlineDB } from './indexedDB';
 
 export type SyncCallback = (status: {
@@ -20,6 +20,7 @@ class SosSyncService {
         this.notify();
         // Auto-sync when coming back online
         this.syncPendingQueue();
+        this.syncPendingMeshQueue();
       });
 
       window.addEventListener('offline', () => {
@@ -107,6 +108,73 @@ class SosSyncService {
     return { synced: syncedCount, failed: failedCount };
   }
 
+  // Offline Mesh Synchronization: Queue outgoing data or location pings
+  async queueLocationPing(
+    lat: number,
+    lng: number,
+    accuracy?: number,
+    batteryLevel?: number | null
+  ): Promise<string> {
+    const packet: MeshPacket = {
+      id: `ping-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+      type: 'location_ping',
+      timestamp: new Date().toISOString(),
+      payload: {
+        latitude: lat,
+        longitude: lng,
+        accuracy: accuracy || 10,
+        batteryLevel: batteryLevel ?? null
+      },
+      syncStatus: 'pending_mesh',
+      hopCount: 0
+    };
+    await offlineDB.queueMeshPacket(packet);
+    if (this.isOnline()) {
+      this.syncPendingMeshQueue().catch(() => {});
+    }
+    return packet.id;
+  }
+
+  async queueOutgoingData(type: MeshPacketType, payload: any): Promise<string> {
+    const packet: MeshPacket = {
+      id: `mesh-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+      type,
+      timestamp: new Date().toISOString(),
+      payload,
+      syncStatus: 'pending_mesh',
+      hopCount: 0
+    };
+    await offlineDB.queueMeshPacket(packet);
+    if (this.isOnline()) {
+      this.syncPendingMeshQueue().catch(() => {});
+    }
+    return packet.id;
+  }
+
+  async syncPendingMeshQueue(): Promise<{ synced: number; failed: number }> {
+    if (!this.isOnline()) return { synced: 0, failed: 0 };
+    let synced = 0;
+    let failed = 0;
+    try {
+      const pending = await offlineDB.getPendingMeshPackets();
+      for (const packet of pending) {
+        try {
+          await offlineDB.updateMeshPacketStatus(packet.id, 'transmitting');
+          // Simulate transmission to mesh network or regional command hub
+          await new Promise((r) => setTimeout(r, 150));
+          await offlineDB.updateMeshPacketStatus(packet.id, 'synced_hq');
+          synced++;
+        } catch {
+          await offlineDB.updateMeshPacketStatus(packet.id, 'failed');
+          failed++;
+        }
+      }
+    } catch (e) {
+      console.warn('Mesh sync failed:', e);
+    }
+    return { synced, failed };
+  }
+
   // Generate 112 Emergency SMS text format (compact, critical metadata only for 2G/satellite)
   formatSosForSms(sos: SosBroadcast): string {
     return `[EMERGENCY 112 SOS - NDRF]
@@ -127,7 +195,7 @@ ID: ${sos.id}`;
     return JSON.stringify(
       {
         exportedAt: new Date().toISOString(),
-        system: 'RAKSHAK India Disaster Response',
+        system: 'SANकेत India Disaster Response',
         totalRecords: queue.length,
         records: queue
       },

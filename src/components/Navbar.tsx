@@ -8,8 +8,7 @@ import {
   Volume2,
   Bell,
   Languages,
-  Clock,
-  Compass
+  Clock
 } from 'lucide-react';
 
 interface NavbarProps {
@@ -21,7 +20,6 @@ interface NavbarProps {
   onOpenSosForm: () => void;
   onOpenSosQueue: () => void;
   onOpenBeacon: () => void;
-  onOpenShelters: () => void;
   onOpenGuides: () => void;
   lang: 'en' | 'hi';
   onToggleLang: () => void;
@@ -36,7 +34,6 @@ export const Navbar: React.FC<NavbarProps> = ({
   onOpenSosForm,
   onOpenSosQueue,
   onOpenBeacon,
-  onOpenShelters,
   onOpenGuides,
   lang,
   onToggleLang
@@ -45,20 +42,29 @@ export const Navbar: React.FC<NavbarProps> = ({
     <header className="h-16 bg-[#070b14] border-b border-slate-800 px-3 md:px-5 flex items-center justify-between text-slate-100 z-30 select-none">
       {/* Brand & Title */}
       <div className="flex items-center gap-3">
-        <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-red-600 to-rose-700 p-0.5 shadow-lg shadow-red-950/60 flex items-center justify-center">
-          <ShieldAlert className="w-6 h-6 text-white" />
+        <div className="flex items-center gap-3">
+          <img
+            src="/sanket-logo.png"
+            alt="SANकेत Logo"
+            className="h-10 md:h-11 w-auto object-contain select-none drop-shadow-md hover:scale-105 transition-transform"
+          />
+          <h1 className="text-xl md:text-2xl font-bold tracking-wide text-white drop-shadow-md flex items-center leading-none font-sans select-none">
+            <span>SAN</span>
+            <span className="text-red-500 font-devanagari">केत</span>
+          </h1>
         </div>
-        <div>
+
+        <div className="hidden sm:block border-l border-slate-800 pl-3">
           <div className="flex items-center gap-2">
-            <h1 className="text-base md:text-lg font-black tracking-wider text-white uppercase flex items-center gap-1.5">
-              RAKSHAK <span className="text-xs font-normal text-slate-400 font-sans">(रक्षक)</span>
-            </h1>
-            <span className="hidden sm:inline-block px-1.5 py-0.5 rounded text-[10px] font-mono font-bold bg-cyan-950 text-cyan-400 border border-cyan-800">
+            <span className="px-1.5 py-0.5 rounded text-[10px] font-mono font-bold bg-cyan-950 text-cyan-400 border border-cyan-800">
               INDIA V2.4
+            </span>
+            <span className="hidden md:inline-block px-1.5 py-0.5 rounded text-[10px] font-mono font-bold bg-red-950/80 text-red-400 border border-red-800/60">
+              EARLY WARNING
             </span>
           </div>
           <p className="text-[10px] md:text-[11px] text-slate-400 font-medium">
-            Offline-First Disaster Response & NDMA CAP Operations
+            National Disaster Response & NDMA CAP Operations
           </p>
         </div>
       </div>
@@ -68,12 +74,12 @@ export const Navbar: React.FC<NavbarProps> = ({
         {/* Network status pill & offline simulation toggle */}
         <button
           onClick={onToggleSimulateOffline}
-          className={`px-2.5 py-1 rounded-full text-xs font-bold flex items-center gap-1.5 border transition-all ${
+          className={`px-3 py-1 rounded-full text-xs font-bold flex items-center gap-1.5 border transition-all ${
             isOnline
-              ? 'bg-emerald-950/50 border-emerald-500/50 text-emerald-300 hover:bg-emerald-900/60'
-              : 'bg-amber-950/70 border-amber-500/60 text-amber-200 hover:bg-amber-900/80 animate-pulse'
+              ? 'bg-emerald-950/50 border-emerald-500/50 text-emerald-300 hover:bg-emerald-900/60 shadow-xs'
+              : 'bg-slate-800 text-slate-300 border-slate-600 hover:bg-slate-700 shadow-xs'
           }`}
-          title="Click to simulate Airplane Mode / Tower Outage"
+          title="Click to toggle Offline Simulation Mode"
         >
           {isOnline ? (
             <>
@@ -84,11 +90,14 @@ export const Navbar: React.FC<NavbarProps> = ({
             </>
           ) : (
             <>
-              <WifiOff className="w-3.5 h-3.5 text-amber-400" />
-              <span className="hidden sm:inline">
-                OFFLINE ({isSimulatedOffline ? 'SIMULATED' : 'NETWORK DOWN'} - INDEXEDDB STORAGE)
-              </span>
-              <span className="sm:hidden">OFFLINE</span>
+              <span className="w-2 h-2 rounded-full bg-slate-400"></span>
+              <WifiOff className="w-3.5 h-3.5 text-slate-400" />
+              <span className="font-bold tracking-wide">OFFLINE - CACHED DATA</span>
+              {isSimulatedOffline && (
+                <span className="hidden md:inline px-1.5 py-0.2 rounded text-[9px] bg-slate-700 text-slate-300 font-mono">
+                  SIMULATED
+                </span>
+              )}
             </>
           )}
         </button>
@@ -106,14 +115,6 @@ export const Navbar: React.FC<NavbarProps> = ({
           <span>{lang === 'en' ? 'ENG | हिंदी' : 'हिंदी | ENG'}</span>
         </button>
 
-        {/* Shelters Button */}
-        <button
-          onClick={onOpenShelters}
-          className="hidden sm:flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 border border-slate-700 text-xs text-slate-300 font-medium transition"
-        >
-          <Compass className="w-3.5 h-3.5 text-emerald-400" />
-          <span>Shelters</span>
-        </button>
 
         {/* Guides Button */}
         <button

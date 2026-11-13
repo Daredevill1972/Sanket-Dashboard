@@ -9,9 +9,13 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@turf/bbox": "^7.4.0",
+    "@turf/centroid": "^7.4.0",
     "clsx": "^2.1.1",
+    "fast-xml-parser": "^5.12.0",
     "lucide-react": "^1.16.0",
     "maplibre-gl": "^5.1.0",
+    "next": "^16.4.5",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "tailwind-merge": "^3.0.2"

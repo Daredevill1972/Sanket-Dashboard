@@ -1,3 +1,5 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Noto+Sans+Devanagari:wght@400;500;600;700;800;900&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -28,7 +30,17 @@
   background: #334155;
 }
 
-/* MapLibre GL popup customizations */
+/* MapLibre GL popup customizations & Stacking Context Fix */
+.maplibregl-popup,
+.mapboxgl-popup {
+  z-index: 50 !important;
+}
+
+.weather-fx-marker {
+  z-index: 10 !important;
+  pointer-events: none !important;
+}
+
 .maplibregl-popup-content {
   background: transparent !important;
   padding: 0 !important;
@@ -36,25 +48,746 @@
   border-radius: 8px !important;
 }
 
-.maplibregl-popup-anchor-top .maplibregl-popup-tip {
-  border-bottom-color: #0f172a !important;
+.maplibregl-popup-anchor-top .maplibregl-popup-tip,
+.tactical-native-popup.maplibregl-popup-anchor-top .maplibregl-popup-tip {
+  border-bottom-color: #020617 !important;
 }
-.maplibregl-popup-anchor-bottom .maplibregl-popup-tip {
-  border-top-color: #0f172a !important;
+.maplibregl-popup-anchor-bottom .maplibregl-popup-tip,
+.tactical-native-popup.maplibregl-popup-anchor-bottom .maplibregl-popup-tip {
+  border-top-color: #020617 !important;
 }
-.maplibregl-popup-anchor-left .maplibregl-popup-tip {
-  border-right-color: #0f172a !important;
+.maplibregl-popup-anchor-left .maplibregl-popup-tip,
+.tactical-native-popup.maplibregl-popup-anchor-left .maplibregl-popup-tip {
+  border-right-color: #020617 !important;
 }
-.maplibregl-popup-anchor-right .maplibregl-popup-tip {
-  border-left-color: #0f172a !important;
+.maplibregl-popup-anchor-right .maplibregl-popup-tip,
+.tactical-native-popup.maplibregl-popup-anchor-right .maplibregl-popup-tip {
+  border-left-color: #020617 !important;
 }
-.maplibregl-popup-close-button {
+.maplibregl-popup-close-button,
+.tactical-native-popup .maplibregl-popup-close-button {
   color: #94a3b8 !important;
   padding: 4px 8px !important;
   font-size: 16px !important;
 }
-.maplibregl-popup-close-button:hover {
+.maplibregl-popup-close-button:hover,
+.tactical-native-popup .maplibregl-popup-close-button:hover {
   color: #ffffff !important;
   background: transparent !important;
 }
+
+/* ==========================================================================
+   WeatherFX Engine Animations (GPU-Accelerated)
+   Strictly pointer-events: none and z-index: 10
+   ========================================================================== */
+
+/* 1. Cyclones: Rotating volumetric SVG spiral with slow spin & pulsing opacity */
+@keyframes cyclone-spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.animate-cyclone-spin {
+  animation: cyclone-spin 14s linear infinite;
+  transform-origin: center center;
+  will-change: transform;
+}
+
+@keyframes cyclone-pulse {
+  0%, 100% {
+    opacity: 0.65;
+  }
+  50% {
+    opacity: 0.95;
+  }
+}
+
+.animate-cyclone-pulse {
+  animation: cyclone-pulse 3.5s ease-in-out infinite;
+  will-change: opacity;
+}
+
+/* 2. Thunderstorms: Fast downward diagonal rain dashes + random lightning flash */
+@keyframes lightning-strobe {
+  0%, 100% {
+    opacity: 0;
+  }
+  1.5% {
+    opacity: 0.85;
+  }
+  3% {
+    opacity: 0.08;
+  }
+  4.5% {
+    opacity: 0.95;
+  }
+  7% {
+    opacity: 0.15;
+  }
+  9% {
+    opacity: 0.75;
+  }
+  12% {
+    opacity: 0;
+  }
+  52% {
+    opacity: 0;
+  }
+  53.5% {
+    opacity: 0.85;
+  }
+  55% {
+    opacity: 0;
+  }
+}
+
+.animate-lightning-strobe {
+  animation: lightning-strobe 4.2s infinite;
+  will-change: opacity;
+}
+
+@keyframes rain-dash-fall {
+  0% {
+    transform: translate3d(20px, -40px, 0);
+  }
+  100% {
+    transform: translate3d(-35px, 280px, 0);
+  }
+}
+
+.animate-rain-dash {
+  animation: rain-dash-fall 0.45s linear infinite;
+  will-change: transform;
+}
+
+/* 3. Floods: Slow horizontally translating layered SVG waves */
+@keyframes flood-wave-translate {
+  0% {
+    transform: translateX(0);
+  }
+  100% {
+    transform: translateX(-50%);
+  }
+}
+
+.animate-flood-wave-slow {
+  animation: flood-wave-translate 6s linear infinite;
+  will-change: transform;
+}
+
+.animate-flood-wave-mid {
+  animation: flood-wave-translate 4s linear infinite;
+  will-change: transform;
+}
+
+/* 4. Earthquakes: Radiating seismic concentric rings + translate-x shake */
+@keyframes seismic-ring-ripple {
+  0% {
+    transform: scale(0.1);
+    opacity: 0.95;
+  }
+  60% {
+    opacity: 0.6;
+  }
+  100% {
+    transform: scale(2.4);
+    opacity: 0;
+  }
+}
+
+.animate-seismic-ring {
+  animation: seismic-ring-ripple 2.4s cubic-bezier(0.1, 0.4, 0.2, 1) infinite;
+  will-change: transform, opacity;
+}
+
+@keyframes seismic-marker-shake {
+  0%, 100% {
+    transform: translateX(0);
+  }
+  15% {
+    transform: translateX(-3px);
+  }
+  30% {
+    transform: translateX(3px);
+  }
+  45% {
+    transform: translateX(-2px);
+  }
+  60% {
+    transform: translateX(2px);
+  }
+  75% {
+    transform: translateX(-1px);
+  }
+}
+
+.animate-seismic-shake {
+  animation: seismic-marker-shake 1.8s ease-in-out infinite;
+  will-change: transform;
+}
+
+/* 5. Heat Waves: Localized blur & contrast with vertical waving distortion */
+@keyframes heat-vertical-shimmer {
+  0%, 100% {
+    transform: translateY(0) scaleY(1);
+    opacity: 0.75;
+  }
+  50% {
+    transform: translateY(-14px) scaleY(1.08);
+    opacity: 0.95;
+  }
+}
+
+.animate-heat-shimmer {
+  animation: heat-vertical-shimmer 2.8s ease-in-out infinite;
+  will-change: transform, opacity;
+}
+
+/* Forest Fire: Flickering orange/red radial glow at epicenter */
+@keyframes fire-flicker-glow {
+  0%, 100% {
+    transform: scale(0.95);
+    opacity: 0.85;
+    filter: drop-shadow(0 0 16px rgba(239, 68, 68, 0.75));
+  }
+  25% {
+    transform: scale(1.06);
+    opacity: 0.98;
+    filter: drop-shadow(0 0 28px rgba(249, 115, 22, 0.9));
+  }
+  50% {
+    transform: scale(0.92);
+    opacity: 0.8;
+    filter: drop-shadow(0 0 14px rgba(239, 68, 68, 0.7));
+  }
+  75% {
+    transform: scale(1.08);
+    opacity: 1;
+    filter: drop-shadow(0 0 32px rgba(245, 158, 11, 0.95));
+  }
+}
+
+.animate-fire-radial-glow {
+  animation: fire-flicker-glow 1.8s ease-in-out infinite;
+  transform-origin: center center;
+  will-change: transform, opacity, filter;
+}
+
+/* Forest Fire: Slowly rising, expanding semi-transparent dark grey smoke plumes */
+@keyframes smoke-plume-rise {
+  0% {
+    transform: translate3d(0, 15px, 0) scale(0.5);
+    opacity: 0;
+  }
+  15% {
+    opacity: 0.65;
+  }
+  45% {
+    opacity: 0.5;
+  }
+  80% {
+    opacity: 0.2;
+  }
+  100% {
+    transform: translate3d(var(--smoke-drift-x, 25px), -145px, 0) scale(2.8);
+    opacity: 0;
+  }
+}
+
+.animate-smoke-plume {
+  animation: smoke-plume-rise var(--smoke-duration, 4.2s) cubic-bezier(0.2, 0.6, 0.35, 1) infinite;
+  will-change: transform, opacity;
+}
+
+/* 6. Landslides: Downwards on a slight diagonal (translate-y and translate-x), fading out at bottom */
+@keyframes landslide-diagonal-fall {
+  0% {
+    transform: translate3d(0, -30px, 0) rotate(0deg);
+    opacity: 0;
+  }
+  12% {
+    opacity: 0.95;
+  }
+  75% {
+    opacity: 0.85;
+  }
+  100% {
+    transform: translate3d(var(--slide-drift-x, 40px), 285px, 0) rotate(var(--slide-rotation, 360deg));
+    opacity: 0;
+  }
+}
+
+.animate-landslide-diagonal {
+  animation: landslide-diagonal-fall var(--slide-duration, 1.8s) cubic-bezier(0.35, 0.1, 0.8, 0.9) infinite;
+  will-change: transform, opacity;
+}
+
+@keyframes landslide-block-drop {
+  0% {
+    transform: translate3d(0, -20px, 0) rotate(0deg);
+    opacity: 0;
+  }
+  10% {
+    opacity: 1;
+  }
+  90% {
+    opacity: 0.9;
+  }
+  100% {
+    transform: translate3d(25px, 280px, 0) rotate(360deg);
+    opacity: 0;
+  }
+}
+
+.animate-landslide-block {
+  animation: landslide-block-drop 1.6s ease-in infinite;
+  will-change: transform, opacity;
+}
+
+/* 7. Snowfalls: Soft white blurred circles dropping with horizontal sway */
+@keyframes snow-sway-fall {
+  0% {
+    transform: translate3d(0, -25px, 0);
+    opacity: 0;
+  }
+  15% {
+    opacity: var(--snow-opacity, 0.9);
+  }
+  35% {
+    transform: translate3d(16px, 85px, 0);
+  }
+  65% {
+    transform: translate3d(-16px, 195px, 0);
+  }
+  85% {
+    opacity: var(--snow-opacity, 0.85);
+  }
+  100% {
+    transform: translate3d(12px, 290px, 0);
+    opacity: 0;
+  }
+}
+
+.animate-snow-sway {
+  animation: snow-sway-fall var(--snow-duration, 3.6s) ease-in-out infinite;
+  will-change: transform, opacity;
+}
+
+@keyframes snow-fall-soft {
+  0% {
+    transform: translate3d(0, -20px, 0);
+    opacity: 0;
+  }
+  15% {
+    opacity: 0.9;
+  }
+  85% {
+    opacity: 0.85;
+  }
+  100% {
+    transform: translate3d(20px, 280px, 0);
+    opacity: 0;
+  }
+}
+
+.animate-snow-circle {
+  animation: snow-fall-soft 3.2s linear infinite;
+  will-change: transform, opacity;
+}
+
+/* 8. Avalanches: Aggressive rapid downward diagonal path with crashing white & ice blocks */
+@keyframes avalanche-crash-diagonal {
+  0% {
+    transform: translate3d(-30px, -35px, 0) scale(0.6) rotate(0deg);
+    opacity: 0;
+  }
+  12% {
+    opacity: 0.98;
+  }
+  45% {
+    transform: translate3d(35px, 120px, 0) scale(1.1) rotate(45deg);
+    opacity: 0.95;
+  }
+  78% {
+    transform: translate3d(90px, 230px, 0) scale(1.4) rotate(90deg);
+    opacity: 0.85;
+  }
+  92% {
+    transform: translate3d(115px, 265px, 0) scale(1.6);
+    opacity: 0.5;
+  }
+  100% {
+    transform: translate3d(130px, 285px, 0) scale(1.8);
+    opacity: 0;
+  }
+}
+
+.animate-avalanche-crash {
+  animation: avalanche-crash-diagonal var(--avalanche-duration, 1.1s) cubic-bezier(0.25, 0.1, 0.8, 0.9) infinite;
+  will-change: transform, opacity;
+}
+
+@keyframes avalanche-cloud-swell {
+  0%, 100% {
+    transform: scale(0.9) translateY(0);
+    opacity: 0.4;
+  }
+  50% {
+    transform: scale(1.15) translateY(-8px);
+    opacity: 0.75;
+  }
+}
+
+.animate-avalanche-cloud {
+  animation: avalanche-cloud-swell 2s ease-in-out infinite;
+  will-change: transform, opacity;
+}
+
+/* 9. Lightning: Quick isolated yellow flashes without rain */
+@keyframes lightning-bolt-flash {
+  0%, 100% {
+    opacity: 0;
+    filter: drop-shadow(0 0 0px transparent);
+  }
+  1.5% {
+    opacity: 1;
+    filter: drop-shadow(0 0 24px rgba(250, 204, 21, 0.95));
+  }
+  3% {
+    opacity: 0.15;
+  }
+  4% {
+    opacity: 0.95;
+    filter: drop-shadow(0 0 30px rgba(234, 179, 8, 1));
+  }
+  6% {
+    opacity: 0;
+  }
+  48% {
+    opacity: 0;
+  }
+  49.5% {
+    opacity: 0.95;
+    filter: drop-shadow(0 0 20px rgba(250, 204, 21, 0.9));
+  }
+  51% {
+    opacity: 0;
+  }
+}
+
+.animate-lightning-bolt-strobe {
+  animation: lightning-bolt-flash 3.5s infinite;
+  will-change: opacity, filter;
+}
+
+/* 10. Rainfall: Dense fast-falling blue vertical dashes */
+@keyframes dense-rain-vertical {
+  0% {
+    transform: translate3d(0, -35px, 0);
+  }
+  100% {
+    transform: translate3d(0, 290px, 0);
+  }
+}
+
+.animate-dense-rain {
+  animation: dense-rain-vertical 0.38s linear infinite;
+  will-change: transform;
+}
+
+/* 11. Drought: Static semi-transparent brown cracked texture overlay */
+@keyframes drought-arid-pulse {
+  0%, 100% {
+    opacity: 0.65;
+    filter: drop-shadow(0 0 10px rgba(120, 53, 15, 0.4));
+  }
+  50% {
+    opacity: 0.88;
+    filter: drop-shadow(0 0 18px rgba(180, 83, 9, 0.6));
+  }
+}
+
+.animate-drought-pulse {
+  animation: drought-arid-pulse 3.8s ease-in-out infinite;
+  will-change: opacity, filter;
+}
+
+/* 12. Hailstorms: Sharp white dots dropping rapidly */
+@keyframes hail-fall-sharp {
+  0% {
+    transform: translate3d(0, -20px, 0);
+    opacity: 0;
+  }
+  10% {
+    opacity: 1;
+  }
+  100% {
+    transform: translate3d(-6px, 290px, 0);
+    opacity: 0.3;
+  }
+}
+
+.animate-hail-dot {
+  animation: hail-fall-sharp 0.45s linear infinite;
+  will-change: transform, opacity;
+}
+
+/* 9. Light Rains: Subtle thin blue vertical dashes fading in and out */
+@keyframes light-rain-fall {
+  0% {
+    transform: translate3d(0, -20px, 0);
+    opacity: 0;
+  }
+  30% {
+    opacity: 0.75;
+  }
+  70% {
+    opacity: 0.75;
+  }
+  100% {
+    transform: translate3d(0, 260px, 0);
+    opacity: 0;
+  }
+}
+
+.animate-light-rain {
+  animation: light-rain-fall 1.1s ease-in-out infinite;
+  will-change: transform, opacity;
+}
+
+/* ==========================================================================
+   Tactical Weather Animations & Particle Systems (GPU-Accelerated)
+   Strictly pointer-events: none to ensure seamless map interaction
+   ========================================================================== */
+
+/* 1. Radar Sweep for Cyclones & Severe Storms */
+@keyframes radar-sweep {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+.animate-radar-sweep {
+  animation: radar-sweep 3.2s linear infinite;
+  transform-origin: center center;
+  will-change: transform;
+}
+
+/* 2. Concentric Radar Pulse Waves */
+@keyframes radar-pulse-wave {
+  0% {
+    transform: scale(0.12);
+    opacity: 0.9;
+  }
+  40% {
+    opacity: 0.65;
+  }
+  100% {
+    transform: scale(1.8);
+    opacity: 0;
+  }
+}
+
+.animate-radar-pulse {
+  animation: radar-pulse-wave 2.8s cubic-bezier(0.1, 0.4, 0.2, 1) infinite;
+  will-change: transform, opacity;
+}
+
+/* 3. Cyclone Eye & Spiral Bands */
+@keyframes cyclone-spiral-spin {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+.animate-cyclone-spiral {
+  animation: cyclone-spiral-spin 4s linear infinite;
+  transform-origin: center center;
+  will-change: transform;
+}
+
+/* 4. Layered CSS Rain Particles */
+@keyframes rain-fall-front {
+  0% {
+    transform: translate3d(0, -80px, 0);
+  }
+  100% {
+    transform: translate3d(-35px, 105vh, 0);
+  }
+}
+
+@keyframes rain-fall-mid {
+  0% {
+    transform: translate3d(0, -60px, 0);
+  }
+  100% {
+    transform: translate3d(-25px, 105vh, 0);
+  }
+}
+
+@keyframes rain-fall-back {
+  0% {
+    transform: translate3d(0, -40px, 0);
+  }
+  100% {
+    transform: translate3d(-15px, 105vh, 0);
+  }
+}
+
+.animate-rain-front {
+  animation: rain-fall-front 0.55s linear infinite;
+  will-change: transform;
+}
+
+.animate-rain-mid {
+  animation: rain-fall-mid 0.85s linear infinite;
+  will-change: transform;
+}
+
+.animate-rain-back {
+  animation: rain-fall-back 1.25s linear infinite;
+  will-change: transform;
+}
+
+/* 5. Rain Splash Ripples */
+@keyframes rain-splash {
+  0% {
+    transform: scale(0.15);
+    opacity: 0.8;
+  }
+  100% {
+    transform: scale(2.2);
+    opacity: 0;
+  }
+}
+
+.animate-rain-splash {
+  animation: rain-splash 1.4s ease-out infinite;
+  will-change: transform, opacity;
+}
+
+/* 6. High-Voltage Atmospheric Lightning Flash */
+@keyframes lightning-sky-flash {
+  0%, 100% {
+    opacity: 0;
+  }
+  1.5% {
+    opacity: 0.55;
+  }
+  3% {
+    opacity: 0.1;
+  }
+  4.5% {
+    opacity: 0.95;
+  }
+  6% {
+    opacity: 0.2;
+  }
+  8% {
+    opacity: 0.85;
+  }
+  12% {
+    opacity: 0;
+  }
+  55% {
+    opacity: 0;
+  }
+  56.5% {
+    opacity: 0.65;
+  }
+  58% {
+    opacity: 0;
+  }
+}
+
+.animate-lightning-flash {
+  animation: lightning-sky-flash 5s infinite;
+  will-change: opacity;
+}
+
+/* 7. Jagged Lightning Bolt Strike */
+@keyframes lightning-bolt-strike {
+  0%, 100% {
+    opacity: 0;
+    transform: scaleY(0.4) scaleX(0.7);
+  }
+  1.5%, 4.5%, 8% {
+    opacity: 1;
+    transform: scaleY(1) scaleX(1);
+    filter: drop-shadow(0 0 16px rgba(251, 191, 36, 1)) drop-shadow(0 0 30px rgba(255, 255, 255, 0.9));
+  }
+  12% {
+    opacity: 0;
+  }
+  56.5% {
+    opacity: 0.9;
+    transform: scaleY(0.95) scaleX(1.05);
+    filter: drop-shadow(0 0 14px rgba(251, 191, 36, 0.9));
+  }
+  58% {
+    opacity: 0;
+  }
+}
+
+.animate-lightning-strike {
+  animation: lightning-bolt-strike 5s infinite;
+  transform-origin: top center;
+  will-change: opacity, transform, filter;
+}
+
+/* 8. Snow & Avalanche Drift */
+@keyframes snow-fall {
+  0% {
+    transform: translate3d(0, -30px, 0);
+  }
+  100% {
+    transform: translate3d(30px, 105vh, 0);
+  }
+}
+
+@keyframes snow-drift {
+  0%, 100% {
+    transform: translateX(0);
+  }
+  50% {
+    transform: translateX(20px);
+  }
+}
+
+.animate-snow-particle {
+  animation: snow-fall 2.8s linear infinite, snow-drift 2.2s ease-in-out infinite;
+  will-change: transform;
+}
+
+/* 9. Thermal Convective Shimmer */
+@keyframes thermal-shimmer {
+  0% {
+    transform: translateY(0) scaleY(0.9);
+    opacity: 0.2;
+  }
+  50% {
+    transform: translateY(-25px) scaleY(1.1);
+    opacity: 0.65;
+  }
+  100% {
+    transform: translateY(-55px) scaleY(1.2);
+    opacity: 0;
+  }
+}
+
+.animate-thermal-wave {
+  animation: thermal-shimmer 2.4s ease-out infinite;
+  will-change: transform, opacity;
+}
+
 

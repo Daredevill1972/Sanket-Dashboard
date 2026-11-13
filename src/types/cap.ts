@@ -14,6 +14,9 @@ export interface CapArea {
     radiusKm: number;
   };
   geocodes?: { valueName: string; value: string }[];
+  district?: string;
+  state?: string;
+  locationLabel?: string;
 }
 
 export interface CapInfo {

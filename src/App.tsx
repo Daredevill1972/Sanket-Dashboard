@@ -1,11 +1,9 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { CapAlert } from './types/cap';
 import { SosBroadcast } from './types/sos';
-import { Shelter } from './types/disaster';
-import { parseCapXml } from './services/capParser';
 import { offlineDB } from './services/indexedDB';
 import { sosSyncService } from './services/syncService';
-import { ALL_SAMPLE_CAP_FEEDS } from './data/mockCapFeeds';
+import { mapLiveAlertsToCap, RawLiveAlert } from './services/liveAlertsMapper';
 import { Navbar } from './components/Navbar';
 import { MapView } from './components/MapView';
 import { HazardPanel } from './components/HazardPanel';
@@ -13,18 +11,12 @@ import { SosFormModal } from './components/SosFormModal';
 import { SosQueueDrawer } from './components/SosQueueDrawer';
 import { CapIngestionModal } from './components/CapIngestionModal';
 import { DistressBeaconModal } from './components/DistressBeaconModal';
-import { ShelterLocatorModal } from './components/ShelterLocatorModal';
 import { OfflineGuidesModal } from './components/OfflineGuidesModal';
 import {
-  AlertTriangle,
   Flame,
-  Radio,
   WifiOff,
-  Crosshair,
-  Layers,
   ChevronLeft,
-  ChevronRight,
-  ShieldCheck
+  ChevronRight
 } from 'lucide-react';
 
 export function App() {
@@ -39,12 +31,17 @@ export function App() {
     typeof navigator !== 'undefined' ? navigator.onLine : true
   );
 
+  // Live polling state
+  const [lastFetchedTime, setLastFetchedTime] = useState<Date | null>(null);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const [fetchError, setFetchError] = useState<string | null>(null);
+  const [isUsingCachedData, setIsUsingCachedData] = useState(false);
+
   // Modals & Panels
   const [isSosFormOpen, setIsSosFormOpen] = useState(false);
   const [isSosQueueOpen, setIsSosQueueOpen] = useState(false);
   const [isCapIngestOpen, setIsCapIngestOpen] = useState(false);
   const [isBeaconOpen, setIsBeaconOpen] = useState(false);
-  const [isSheltersOpen, setIsSheltersOpen] = useState(false);
   const [isGuidesOpen, setIsGuidesOpen] = useState(false);
 
   // Map & Panel UI
@@ -53,55 +50,152 @@ export function App() {
   const [isPickingLocation, setIsPickingLocation] = useState(false);
   const [pickedLocation, setPickedLocation] = useState<{ lat: number; lng: number } | null>(null);
 
-  // Language & Refreshing
+  // Language
   const [lang, setLang] = useState<'en' | 'hi'>('en');
-  const [isRefreshing, setIsRefreshing] = useState(false);
+
+  // State-Wise Search & Camera Framing
+  const [selectedState, setSelectedState] = useState<string | null>(null);
+  const [targetBbox, setTargetBbox] = useState<[number, number, number, number] | null>(null);
+
+  const handleSelectState = (stateName: string | null, bbox: [number, number, number, number] | null) => {
+    setSelectedState(stateName);
+    setTargetBbox(bbox);
+  };
 
   const effectiveIsOnline = isSimulatedOffline ? false : realIsOnline;
 
-  // Initialize and load data from IndexedDB
-  const loadInitialData = useCallback(async () => {
+  // Loads the latest cached NDMA alerts from IndexedDB
+  const loadCachedAlerts = useCallback(async () => {
     try {
-      // 1. Load SOS records from IndexedDB
-      const storedSos = await offlineDB.getAllSos();
-      setSosList(storedSos);
-
-      // 2. Load cached CAP alerts or initialize with authentic NDMA samples
       const cached = await offlineDB.getCachedCapAlerts();
       if (cached && cached.length > 0) {
         setAlerts(cached);
-      } else {
-        const initialAlerts: CapAlert[] = [];
-        ALL_SAMPLE_CAP_FEEDS.forEach((xml) => {
-          try {
-            const parsed = parseCapXml(xml);
-            initialAlerts.push(...parsed);
-          } catch (e) {
-            console.error('Initial feed parse error:', e);
-          }
-        });
-        setAlerts(initialAlerts);
-        await offlineDB.cacheCapAlerts(initialAlerts);
+        setIsUsingCachedData(true);
+        console.log('[Offline Cache] Automatically loaded', cached.length, 'disaster alerts from IndexedDB');
+        return;
+      }
+
+      // Check full JSON payload backup
+      const payload = await offlineDB.getLatestNdmaPayload();
+      if (payload) {
+        const raw = Array.isArray(payload) ? payload : Array.isArray(payload?.alerts) ? payload.alerts : [];
+        if (raw.length > 0) {
+          const mapped = mapLiveAlertsToCap(raw);
+          setAlerts(mapped);
+          setIsUsingCachedData(true);
+          console.log('[Offline Cache] Loaded', mapped.length, 'alerts from latest NDMA JSON payload in IndexedDB');
+        }
       }
     } catch (err) {
-      console.error('Data initialization error:', err);
+      console.warn('[Offline Cache] Error loading cached alerts from IndexedDB:', err);
     }
   }, []);
 
-  useEffect(() => {
-    loadInitialData();
+  // Primary function to fetch live NDMA alerts from /api/alerts
+  const fetchLiveAlerts = useCallback(async () => {
+    setIsRefreshing(true);
+    setFetchError(null);
 
-    // Listen for real online/offline events
-    const handleOnline = () => setRealIsOnline(true);
-    const handleOffline = () => setRealIsOnline(false);
+    try {
+      // Append cache-busting timestamp parameter
+      const res = await fetch(`/api/alerts?t=${Date.now()}`, {
+        cache: 'no-store'
+      });
+
+      if (!res.ok) {
+        throw new Error(`HTTP ${res.status}: Failed to fetch from /api/alerts`);
+      }
+
+      const data = await res.json();
+
+      // Store the latest NDMA JSON payload in IndexedDB for full offline resilience
+      await offlineDB.saveLatestNdmaPayload(data);
+
+      const rawAlerts: RawLiveAlert[] = Array.isArray(data)
+        ? data
+        : Array.isArray(data?.alerts)
+        ? data.alerts
+        : [];
+
+      if (rawAlerts.length > 0) {
+        const mapped = mapLiveAlertsToCap(rawAlerts);
+        setAlerts(mapped);
+        setLastFetchedTime(new Date(data?.timestamp || Date.now()));
+        setIsUsingCachedData(false);
+
+        // Cache mapped live alerts to local IndexedDB
+        await offlineDB.cacheCapAlerts(mapped);
+      } else {
+        await loadCachedAlerts();
+      }
+    } catch (err: any) {
+      console.warn('[Live Alerts] Network unreachable, automatically loading alerts from IndexedDB cache:', err);
+      setFetchError(err?.message || 'Offline mode: Loaded alerts from local cache');
+
+      // Connection dropped or failed, automatically load from local IndexedDB cache
+      await loadCachedAlerts();
+    } finally {
+      setIsRefreshing(false);
+    }
+  }, [loadCachedAlerts]);
+
+  // 1. Initial load & hourly (3,600,000 ms) polling interval
+  useEffect(() => {
+    // If online, fetch live alerts; if offline, load cached alerts immediately
+    if (typeof navigator !== 'undefined' && !navigator.onLine) {
+      loadCachedAlerts();
+    } else {
+      fetchLiveAlerts();
+    }
+
+    // Polling interval to re-fetch live alerts every 1 hour (3,600,000 milliseconds)
+    const intervalId = setInterval(() => {
+      if (typeof navigator !== 'undefined' && navigator.onLine && !isSimulatedOffline) {
+        fetchLiveAlerts();
+      }
+    }, 3600000);
+
+    return () => clearInterval(intervalId);
+  }, [fetchLiveAlerts, loadCachedAlerts, isSimulatedOffline]);
+
+  // 2. Initialize SOS records, GPS location, and online/offline event listeners
+  useEffect(() => {
+    // Load SOS records from IndexedDB
+    offlineDB.getAllSos().then(setSosList).catch(console.error);
+
+    // Event listener for navigator.onLine; automatically refresh or load cache
+    const handleOnline = () => {
+      console.log('[Network Status] Connection restored. Automatically triggering background sync for NDMA feed...');
+      setRealIsOnline(true);
+      setIsUsingCachedData(false);
+
+      // Automatically trigger a background sync to refresh the NDMA feed the moment the connection is restored
+      fetchLiveAlerts();
+      sosSyncService.syncPendingQueue();
+      sosSyncService.syncPendingMeshQueue();
+    };
+
+    const handleOffline = () => {
+      console.log('[Network Status] Connection dropped. Automatically loading disaster alerts from local IndexedDB cache...');
+      setRealIsOnline(false);
+      setIsUsingCachedData(true);
+
+      // Automatically load the most recent disaster alerts from local cache
+      loadCachedAlerts();
+    };
+
     window.addEventListener('online', handleOnline);
     window.addEventListener('offline', handleOffline);
 
-    // Get user GPS position
+    // Get user GPS position & queue location ping for offline mesh synchronization
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
         (pos) => {
-          setUserLocation({ lat: pos.coords.latitude, lng: pos.coords.longitude });
+          const loc = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+          setUserLocation(loc);
+
+          // Prepare state management for offline mesh sync by queuing outgoing location pings
+          sosSyncService.queueLocationPing(loc.lat, loc.lng, pos.coords.accuracy).catch(() => {});
         },
         () => {
           // Default to central India/Odisha coordinates
@@ -123,7 +217,25 @@ export function App() {
       window.removeEventListener('offline', handleOffline);
       unsubscribe();
     };
-  }, [loadInitialData]);
+  }, [fetchLiveAlerts, loadCachedAlerts]);
+
+  // Toggle offline simulation with automatic cache/sync transitions
+  const handleToggleSimulateOffline = () => {
+    const next = !isSimulatedOffline;
+    setIsSimulatedOffline(next);
+
+    if (next) {
+      // Simulating connection drop: automatically load most recent alerts from cache
+      setIsUsingCachedData(true);
+      loadCachedAlerts();
+    } else {
+      // Reconnected: automatically trigger background sync
+      setIsUsingCachedData(false);
+      fetchLiveAlerts();
+      sosSyncService.syncPendingQueue();
+      sosSyncService.syncPendingMeshQueue();
+    }
+  };
 
   // Refresh SOS list
   const refreshSosList = async () => {
@@ -131,16 +243,12 @@ export function App() {
     setSosList(list);
   };
 
-  // Reload CAP feeds
-  const handleRefreshFeeds = async () => {
-    setIsRefreshing(true);
-    setTimeout(async () => {
-      await loadInitialData();
-      setIsRefreshing(false);
-    }, 600);
+  // Manual refresh triggers live re-fetch from /api/alerts
+  const handleRefreshFeeds = () => {
+    fetchLiveAlerts();
   };
 
-  // Ingest new alerts callback
+  // Ingest manual alerts callback (from custom CAP XML upload)
   const handleAlertsIngested = (newAlerts: CapAlert[]) => {
     setAlerts((prev) => {
       const existingIds = new Set(prev.map((a) => a.identifier));
@@ -161,10 +269,6 @@ export function App() {
     }
   };
 
-  const handleSelectShelterOnMap = (shelter: Shelter) => {
-    // MapView will fly to the shelter
-  };
-
   const pendingSosCount = sosList.filter((s) => s.syncStatus === 'pending_offline').length;
 
   return (
@@ -172,7 +276,7 @@ export function App() {
       {/* Top Navigation */}
       <Navbar
         isOnline={effectiveIsOnline}
-        onToggleSimulateOffline={() => setIsSimulatedOffline(!isSimulatedOffline)}
+        onToggleSimulateOffline={handleToggleSimulateOffline}
         isSimulatedOffline={isSimulatedOffline}
         pendingSosCount={pendingSosCount}
         totalSosCount={sosList.length}
@@ -182,7 +286,6 @@ export function App() {
         }}
         onOpenSosQueue={() => setIsSosQueueOpen(true)}
         onOpenBeacon={() => setIsBeaconOpen(true)}
-        onOpenShelters={() => setIsSheltersOpen(true)}
         onOpenGuides={() => setIsGuidesOpen(true)}
         lang={lang}
         onToggleLang={() => setLang(lang === 'en' ? 'hi' : 'en')}
@@ -197,7 +300,7 @@ export function App() {
               OFFLINE-FIRST MODE ACTIVE:{' '}
               {isSimulatedOffline
                 ? 'Simulated cell tower outage. Broadcasts will store in local IndexedDB.'
-                : 'No network connection detected. Using cached geospatial layers and offline queue.'}
+                : 'No network connection detected. Using cached live geospatial layers and offline queue.'}
             </span>
           </div>
           <button
@@ -230,7 +333,7 @@ export function App() {
           }`}
         >
           <Flame className="w-3.5 h-3.5 text-red-400" />
-          NDMA Feeds ({alerts.length})
+          Live Warnings ({alerts.length})
         </button>
       </div>
 
@@ -254,6 +357,11 @@ export function App() {
             onOpenIngestModal={() => setIsCapIngestOpen(true)}
             onRefreshFeeds={handleRefreshFeeds}
             isRefreshing={isRefreshing}
+            lastFetchedTime={lastFetchedTime}
+            selectedState={selectedState}
+            onSelectState={handleSelectState}
+            currentLang={lang}
+            isOffline={!effectiveIsOnline || isUsingCachedData}
           />
         </div>
 
@@ -277,6 +385,7 @@ export function App() {
             userLocation={userLocation}
             onMapClickLocation={handleMapClickLocation}
             isPickingLocation={isPickingLocation}
+            targetBbox={targetBbox}
           />
         </div>
       </div>
@@ -319,15 +428,7 @@ export function App() {
         onClose={() => setIsBeaconOpen(false)}
       />
 
-      {/* 5. Relief Shelters Locator Modal */}
-      <ShelterLocatorModal
-        isOpen={isSheltersOpen}
-        onClose={() => setIsSheltersOpen(false)}
-        userLocation={userLocation}
-        onSelectShelterOnMap={handleSelectShelterOnMap}
-      />
-
-      {/* 6. Offline SOPs & Emergency Contacts Modal */}
+      {/* 5. Offline SOPs & Emergency Contacts Modal */}
       <OfflineGuidesModal
         isOpen={isGuidesOpen}
         onClose={() => setIsGuidesOpen(false)}
@@ -336,4 +437,3 @@ export function App() {
   );
 }
 export default App;
-
