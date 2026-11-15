@@ -1,3 +1,5 @@
+'use client';
+
 import React, { useState, useEffect, useCallback } from 'react';
 import { CapAlert } from './types/cap';
 import { SosBroadcast } from './types/sos';
