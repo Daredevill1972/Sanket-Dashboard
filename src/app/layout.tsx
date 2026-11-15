@@ -1,6 +1,6 @@
 import type { Metadata } from 'next';
 import React from 'react';
-import '../src/index.css';
+import '../index.css';
 import 'maplibre-gl/dist/maplibre-gl.css';
 
 export const metadata: Metadata = {
