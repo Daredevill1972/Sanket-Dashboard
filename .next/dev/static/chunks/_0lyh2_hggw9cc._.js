@@ -12,10 +12,14 @@ var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist
 'use client';
 ;
 ;
-const DashboardApp = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$shared$2f$lib$2f$app$2d$dynamic$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["default"])(()=>__turbopack_context__.A("[project]/src/App.tsx [app-client] (ecmascript, next/dynamic entry, async loader)").then((mod)=>mod.App), {
+const DashboardApp = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$shared$2f$lib$2f$app$2d$dynamic$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["default"])(()=>Promise.resolve().then(()=>{
+        const e = new Error("Cannot find module '../App'");
+        e.code = 'MODULE_NOT_FOUND';
+        throw e;
+    }).then((mod)=>mod.App), {
     loadableGenerated: {
         modules: [
-            "[project]/src/App.tsx [app-client] (ecmascript, next/dynamic entry)"
+            null
         ]
     },
     ssr: false,

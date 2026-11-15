@@ -4,7 +4,7 @@ import dynamic from 'next/dynamic';
 import React from 'react';
 
 const DashboardApp = dynamic(
-  () => import('../src/App').then((mod) => mod.App),
+  () => import('../App').then((mod) => mod.App),
   {
     ssr: false,
     loading: () => (
